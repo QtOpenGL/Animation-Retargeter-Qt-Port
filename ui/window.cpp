@@ -209,7 +209,30 @@ void Window::resetRetargetWidgets(){
 
 void Window::retargetAnimation(){
 
-    //engine->retargetAnimation(boneMap)
+    map<int, int> boneMap;
+    vector<int> roots;
+
+    for(int i = 0; i < checkBoxes.size(); i++){
+        if(checkBoxes[i]->isChecked())
+            roots.push_back(i);
+    }
+
+    for(int i = 0; i < labels.size(); i++){
+        std::cout << labels[i]->text().toStdString() << ": " << comboBoxes[i]->currentText().toStdString() << std::endl;
+
+        if(comboBoxes[i]->currentIndex() > 0){
+            boneMap.insert(std::pair<int, int>(i, comboBoxes[i]->currentIndex()-1));
+        }
+    }
+
+    std::cout << "retarget pressed" << std::endl;
+
+    ProcedureResult result = engine->retargetAnimation(boneMap, roots);
+
+    if(!result.getResult()){
+        QMessageBox::warning(this, tr("Problem retargeting the animation: "), result.getMessage(), QMessageBox::Ok);
+    }
+
 }
 
 GLWidget * Window::getGLWidget(){

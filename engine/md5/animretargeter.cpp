@@ -56,7 +56,7 @@ bool AnimRetargeter::inVector(int target, vector<int> vector){
     return false;
 }
 
-Animation* AnimRetargeter::retargetAnim(Animation * anim, AnimEntity * ent, map<int, int> * userMap, vector<int> roots, Skeleton bind){
+Animation* AnimRetargeter::retargetAnim(Animation * anim, AnimEntity * ent, map<int, int> userMap, vector<int> roots, Skeleton bind){
 
     Animation * animation  = new Animation;
 
@@ -80,10 +80,10 @@ Animation* AnimRetargeter::retargetAnim(Animation * anim, AnimEntity * ent, map<
             int p = nskel[i].getParent();
 
 
-            if(userMap->count(i) && !nskel[p].beenComputed() && !inVector(i, roots)){
+            if(userMap.count(i) && !nskel[p].beenComputed() && !inVector(i, roots)){
 
 
-                int aj = userMap->find(i)->second;
+                int aj = userMap.find(i)->second;
 
                 int gp = nskel[p].getParent();
                 int p2 = skel2[aj].getParent();
@@ -124,10 +124,10 @@ Animation* AnimRetargeter::retargetAnim(Animation * anim, AnimEntity * ent, map<
                 nskel[p].setComputed(true);
                 //nskel.recomputeObjectSpace();
             }
-            else if(userMap->count(i) && !nskel[p].beenComputed()){
+            else if(userMap.count(i) && !nskel[p].beenComputed()){
 
                 //cout << i << " " << nskel[i].getName() << endl;
-                int aj = userMap->find(i)->second;
+                int aj = userMap.find(i)->second;
                 int ap = skel2[aj].getParent();
                 int agp = skel2[ap].getParent();
                 quaternion diff = skel2[agp].getObjectOrient().getConjugate() * skel2[ap].getObjectOrient();

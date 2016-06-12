@@ -74,6 +74,7 @@ void GLWidget::cleanup()
 
 void GLWidget::initializeGL()
 {
+    connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &GLWidget::cleanup);
     initializeOpenGLFunctions();
     engine->initializeGL();
 }

@@ -111,7 +111,7 @@ public:
     frame(const frame & f);
     ~frame(){ }
 
-    int getFrameIndex() const { return frameIndex; };
+    int getFrameIndex() const { return frameIndex; }
     vector<float> & getComponentVals() { return componentVals; }
 
 };

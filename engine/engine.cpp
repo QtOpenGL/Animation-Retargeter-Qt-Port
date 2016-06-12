@@ -3,21 +3,64 @@
 #include <QString>
 
 
-Engine::Engine(QObject * parent): QObject(parent), toEntity(NULL), fromEntity(NULL), animation(NULL)
+Engine::Engine(QObject * parent): QObject(parent), indexBuffer(QOpenGLBuffer::IndexBuffer), toEntity(NULL), fromEntity(NULL), animation(NULL)
 {
-     camera = new Camera(vec3(0, 0, 10));
+     camera = new Camera(QVector3D(0, 0, 10));
      modelLoader = new ModelLoader();
      animLoader = new AnimLoader();
      animRetargeter = new AnimRetargeter();
-     userMap = new map<int, int>;
 }
 
-void Engine::onPlayFrom(){ std::cout << "onPlayFrom()" << std::endl; }
-void Engine::onPlayTo(){ std::cout << "onPlayTo()" << std::endl; }
-void Engine::onBindFrom(){ std::cout << "onBindFrom()" << std::endl; }
-void Engine::onBindTo(){ std::cout << "onBindTo()" << std::endl; }
-void Engine::onHideFrom(){ std::cout << "onHideFrom()" << std::endl; }
-void Engine::onHideTo(){ std::cout << "onHideTo()" << std::endl; }
+void Engine::onPlayFrom(){
+
+    if(fromEntity->isPaused()){
+        fromEntity->Play(); //if in bindpose will have no effect.
+    }else{
+        fromEntity->Pause();
+    }
+}
+
+void Engine::onPlayTo(){
+    if(toEntity->isPaused()){
+        toEntity->Play(); //if in bindpose will have no effect.
+    }else{
+        toEntity->Pause();
+    }
+}
+
+void Engine::onBindFrom(){
+    if(fromEntity->isBindPose()){
+        fromEntity->Pause();
+    }else{
+        fromEntity->BindPose();
+    }
+}
+
+void Engine::onBindTo(){
+    if(toEntity->isBindPose()){
+        toEntity->Pause();
+    }else{
+        toEntity->BindPose();
+    }
+}
+
+void Engine::onHideFrom(){
+    if(fromEntity->isVisible()){
+        fromEntity->Pause(); //don't want to run an animation whilst hidden.
+        fromEntity->setVisible(false);
+    }else{
+        fromEntity->setVisible(true);
+    }
+}
+
+void Engine::onHideTo(){
+    if(toEntity->isVisible()){
+        toEntity->Pause(); //don't want to run an animation whilst hidden.
+        toEntity->setVisible(false);
+    }else{
+        toEntity->setVisible(true);
+    }
+}
 
 
 QVector<Skeleton> Engine::getSkeletonsForWindow(){
@@ -27,10 +70,33 @@ QVector<Skeleton> Engine::getSkeletonsForWindow(){
     //in order to return skeletons we need: a toEntity, a fromEntity and a compatible animation.
     if(toEntity && animation && fromEntity && fromEntity->setAnim(animation)){
         skeletons.push_back(toEntity->getBindPose());
-        skeletons.push_back(animation->getSkeletons()[0]);
+        skeletons.push_back(fromEntity->getBindPose());
     }
 
     return skeletons;
+}
+
+ProcedureResult Engine::retargetAnimation(map<int, int> boneMap, vector<int> roots){
+    Animation * retargetAnimation;
+
+    retargetAnimation = animRetargeter->retargetAnim(animation, toEntity, boneMap, roots, fromEntity->getBindPose());
+
+    if(!retargetAnimation){
+        return ProcedureResult(false, "Retargeting failed.");
+    }else if(retargetAnimation->getSkeletons().empty()){
+        return ProcedureResult(false, "Retargeting failed.");
+    }else{
+
+        if(!toEntity->setAnim(animation)){
+            return ProcedureResult(false, "Retargeting failed.");
+        }else{
+            toEntity->Pause(); //this should set the first frame of animation
+            return ProcedureResult(false, "Retargeting was a Success");
+        }
+
+    }
+
+
 }
 
 ProcedureResult Engine::LoadAnimation(QString animString){
@@ -40,6 +106,9 @@ ProcedureResult Engine::LoadAnimation(QString animString){
 
     if(!animation){
         animation = prevAnim;
+        return ProcedureResult(false, "File path incorrect");
+    }else if(animation->getSkeletons().empty()){
+        animation = prevAnim;
         return ProcedureResult(false, "File corrupted");
     }else{
 
@@ -47,6 +116,7 @@ ProcedureResult Engine::LoadAnimation(QString animString){
             animation = prevAnim;
             return ProcedureResult(false, "The chosen animation is incompatible with the current 'From Model' please select a compatible animation or different 'From Model'");
         }else{
+            fromEntity->Pause();
             delete prevAnim;
             return ProcedureResult(true, "");
         }
@@ -55,44 +125,6 @@ ProcedureResult Engine::LoadAnimation(QString animString){
 
 }
 
-
-GLuint Engine::storeTexture(QString filepath){
-
-    /*
-    TargaImage modelTexture;
-
-    if (!modelTexture.load(filepath))
-    {
-        std::cerr << "Could not load the model texture" << std::endl; //could be replace with an exception.
-        return false;
-    }
-
-    GLuint textureBuffer;
-    glGenTextures(1, &textureBuffer);
-    glActiveTexture(GL_TEXTURE0); //GL_TEXTURE0 or TEXTURE1 e.c.t defined by how the class handles this
-    glBindTexture(GL_TEXTURE_2D, textureBuffer);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, modelTexture.getWidth(),
-                 modelTexture.getHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE,
-                 modelTexture.getImageData());
-
-   gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB8, modelTexture.getWidth(),
-                      modelTexture.getHeight(), GL_RGB, GL_UNSIGNED_BYTE,
-                      modelTexture.getImageData());
-
-
-
-    TexIDs.push_back(textureBuffer);
-
-
-    return textureBuffer;
-    */
-
-    //GLuint num = 0;
-
-    return 0;
-}
 
 ProcedureResult Engine::LoadModel(QString meshString, QString texString, EntityType type){
 
@@ -103,14 +135,19 @@ ProcedureResult Engine::LoadModel(QString meshString, QString texString, EntityT
 
         if(!fromEntity){
             fromEntity = prevEntity;
-            return ProcedureResult(false, "File corrupted.");
+            return ProcedureResult(false, "File path incorrect.");
+        }else if(fromEntity->getSubEntities().empty()){
+            fromEntity = prevEntity;
+            return ProcedureResult(false, "File is corrupted.");
         }else{
-            fromEntity->getSubEntities()[0].setTexBID(storeTexture(texString));
+            QOpenGLTexture* texture = new QOpenGLTexture(QImage(texString));
+            fromEntity->getSubEntities()[0].setTexture(texture);
+            textures.push_back(texture);
             fromEntity->getSubEntities()[1].setVisible(false);
             fromEntity->getSubEntities()[2].setVisible(false);
             fromEntity->getSubEntities()[3].setVisible(false);
-            fromEntity->rotate(30.0f, vec3(1,0,0));
-            fromEntity->translate(vec3(-100, -20, -120));
+            fromEntity->rotate(30.0f, QVector3D(1,0,0));
+            fromEntity->translate(QVector3D(-100, -20, -120));
             fromEntity->BindPose();
             delete prevEntity;
             return ProcedureResult(true, "");
@@ -123,14 +160,20 @@ ProcedureResult Engine::LoadModel(QString meshString, QString texString, EntityT
 
         if(!toEntity){
             toEntity = prevEntity;
-            return ProcedureResult(false, "File corrupted.");
+            return ProcedureResult(false, "File path incorrect.");
+
+        }else if(toEntity->getSubEntities().empty()){
+            toEntity = prevEntity;
+            return ProcedureResult(false, "File corrupted");
         }else{
-            toEntity->getSubEntities()[0].setTexBID(storeTexture(texString));
+            QOpenGLTexture* texture = new QOpenGLTexture(QImage(texString));
+            toEntity->getSubEntities()[0].setTexture(texture);
+            textures.push_back(texture);
             toEntity->getSubEntities()[1].setVisible(false);
             toEntity->getSubEntities()[2].setVisible(false);
             toEntity->getSubEntities()[3].setVisible(false);
-            toEntity->rotate(30.0f, vec3(1,0,0));
-            toEntity->translate(vec3(-100, -20, -120));
+            toEntity->rotate(30.0f, QVector3D(1,0,0));
+            toEntity->translate(QVector3D(-15, -20, -120));
             toEntity->BindPose();
             delete prevEntity;
             return ProcedureResult(true, "");
@@ -139,16 +182,28 @@ ProcedureResult Engine::LoadModel(QString meshString, QString texString, EntityT
 }
 
 void Engine::update(){
-    std::cout << "engine::update()" << std::endl;
+
+    if(toEntity){
+        toEntity->update();
+    }
+
+    if(fromEntity){
+        fromEntity->update();
+    }
+
 }
 
 void Engine::cleanup()
 {
     std::cout << "engine cleanup" << std::endl;
-    m_logoVbo.destroy();
+    indexBuffer.destroy();
+
+    for(QOpenGLTexture* texture: textures){
+        delete texture;
+    }
+
     delete m_program;
     m_program = 0;
-
     delete camera;
     delete modelLoader;
     delete animLoader;
@@ -156,118 +211,155 @@ void Engine::cleanup()
     delete toEntity;
     delete fromEntity;
     delete animation;
-    delete userMap;
 }
-
-
-static const char *vertexShaderSourceCore =
-    "#version 150\n"
-    "in vec4 vertex;\n"
-    "in vec3 normal;\n"
-    "out vec3 vert;\n"
-    "out vec3 vertNormal;\n"
-    "uniform mat4 projMatrix;\n"
-    "uniform mat4 mvMatrix;\n"
-    "uniform mat3 normalMatrix;\n"
-    "void main() {\n"
-    "   vert = vertex.xyz;\n"
-    "   vertNormal = normalMatrix * normal;\n"
-    "   gl_Position = projMatrix * mvMatrix * vertex;\n"
-    "}\n";
-
-static const char *fragmentShaderSourceCore =
-    "#version 150\n"
-    "in highp vec3 vert;\n"
-    "in highp vec3 vertNormal;\n"
-    "out highp vec4 fragColor;\n"
-    "uniform highp vec3 lightPos;\n"
-    "void main() {\n"
-    "   highp vec3 L = normalize(lightPos - vert);\n"
-    "   highp float NL = max(dot(normalize(vertNormal), L), 0.0);\n"
-    "   highp vec3 color = vec3(0.39, 1.0, 0.0);\n"
-    "   highp vec3 col = clamp(color * 0.2 + color * 0.8 * NL, 0.0, 1.0);\n"
-    "   fragColor = vec4(col, 1.0);\n"
-    "}\n";
-
-static const char *vertexShaderSource =
-    "attribute vec4 vertex;\n"
-    "attribute vec3 normal;\n"
-    "varying vec3 vert;\n"
-    "varying vec3 vertNormal;\n"
-    "uniform mat4 projMatrix;\n"
-    "uniform mat4 mvMatrix;\n"
-    "uniform mat3 normalMatrix;\n"
-    "void main() {\n"
-    "   vert = vertex.xyz;\n"
-    "   vertNormal = normalMatrix * normal;\n"
-    "   gl_Position = projMatrix * mvMatrix * vertex;\n"
-    "}\n";
-
-static const char *fragmentShaderSource =
-    "varying highp vec3 vert;\n"
-    "varying highp vec3 vertNormal;\n"
-    "uniform highp vec3 lightPos;\n"
-    "void main() {\n"
-    "   highp vec3 L = normalize(lightPos - vert);\n"
-    "   highp float NL = max(dot(normalize(vertNormal), L), 0.0);\n"
-    "   highp vec3 color = vec3(0.39, 1.0, 0.0);\n"
-    "   highp vec3 col = clamp(color * 0.2 + color * 0.8 * NL, 0.0, 1.0);\n"
-    "   gl_FragColor = vec4(col, 1.0);\n"
-    "}\n";
 
 void Engine::initializeGL()
 {
 
-    glClearColor(0, 0, 0, m_transparent ? 0 : 1);
+    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+
+    indexBuffer.create();
 
     m_program = new QOpenGLShaderProgram;
-    m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, m_core ? vertexShaderSourceCore : vertexShaderSource);
-    m_program->addShaderFromSourceCode(QOpenGLShader::Fragment, m_core ? fragmentShaderSourceCore : fragmentShaderSource);
-    m_program->bindAttributeLocation("vertex", 0);
-    m_program->bindAttributeLocation("normal", 1);
+    m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, VertexShaderSource);
+    m_program->addShaderFromSourceCode(QOpenGLShader::Fragment, FragmentShaderSource);
+    m_program->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
+    m_program->bindAttributeLocation("texCoord", PROGRAM_TEXCOORD_ATTRIBUTE);
     m_program->link();
-
     m_program->bind();
-    m_projMatrixLoc = m_program->uniformLocation("projMatrix");
-    m_mvMatrixLoc = m_program->uniformLocation("mvMatrix");
-    m_normalMatrixLoc = m_program->uniformLocation("normalMatrix");
-    m_lightPosLoc = m_program->uniformLocation("lightPos");
-
-    // Create a vertex array object. In OpenGL ES 2.0 and OpenGL 2.x
-    // implementations this is optional and support may not be present
-    // at all. Nonetheless the below code works in all cases and makes
-    // sure there is a VAO when one is needed.
-    m_vao.create();
-    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
-
-    // Setup our vertex buffer object.
-    m_logoVbo.create();
-    m_logoVbo.bind();
-    m_logoVbo.allocate(m_logo.constData(), m_logo.count() * sizeof(GLfloat));
-
-    // Store the vertex attribute bindings for the program.
-    setupVertexAttribs();
-
-    // Our camera never changes in this example.
-    m_camera.setToIdentity();
-    m_camera.translate(0, 0, -1);
-
-    // Light position is fixed.
-    m_program->setUniformValue(m_lightPosLoc, QVector3D(0, 0, 70));
+    m_program->setUniformValue("texture", 0);
 
     m_program->release();
 }
 
-void Engine::setupVertexAttribs()
-{
-    m_logoVbo.bind();
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-    f->glEnableVertexAttribArray(0);
-    f->glEnableVertexAttribArray(1);
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), 0);
-    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
-    m_logoVbo.release();
+/*
+ * BufferedDrawTex
+ * Send an animated animEntityity to the graphics card to be rendered to the screen
+ * @param AnimEntity animEntity - the animEntity to be rendered.
+ */
+void Engine::bufferedDrawTex(AnimEntity *animEntity){
+
+    for(int i = 0; i < animEntity->getSubEntities().size(); i++ ){
+        AnimSubEntity & subEntity = animEntity->getSubEntities()[i];
+
+        if(!subEntity.isVisible()){
+            continue;
+        }
+
+        //is there data loaded into the graphics card already?
+        if (!subEntity.getModel()->isInBuffer()){
+            sendDataToBufferTex(subEntity);
+        }else if(animEntity->frameChanged()){
+            resendVertsToBuffer(subEntity);
+        }
+
+
+        //QMatrix4x4 finalMatrix = projMatrix * camera->getWorldToViewMatrix() * animEntity->getPos() * animEntity->getOrient();
+
+        QMatrix4x4 finalMatrix;
+
+        finalMatrix = finalMatrix * camera->getWorldToViewMatrix();
+
+        //finalMatrix.setToIdentity();
+
+       /* GLfloat kingMat[4][4];
+
+        GLfloat *pSource = (GLfloat*)glm::value_ptr(finalMatrix);
+
+        int j, k;
+
+        for(int i = j = k = 0; i < 16; i++){
+            kingMat[k][j] = pSource[i];
+            std::cout << kingMat[j][k] << " ";
+            if(i != 0 && i % 4 == 0){
+                std::cout << "\n";
+                k = 0;
+                j++;
+            }else{
+                k++;
+            }
+        } */
+
+
+        //QMatrix4x4 basic;
+        m_program->setUniformValue("matrix", finalMatrix);
+
+        //texture
+        subEntity.getTexture()->bind();
+
+        //enable attrib arrays.
+        m_program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+        m_program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
+
+        //texture code
+        //textureDataVBO.bind();
+        //glTexCoordPointer(2, GL_FLOAT, 0, 0);
+
+
+        //vertex code.
+        //vertexDataVBO.bind();
+        //glVertexPointer(3, GL_FLOAT,0,0);
+
+        //index code.
+        indexBuffer.bind();
+
+
+        glDrawElements(GL_TRIANGLES, subEntity.getModel()->getIndices().size(), GL_UNSIGNED_INT, 0);
+
+
+        //disable attrib arrays.
+        //m_program->disableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+        //m_program->disableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
+
+
+    }
+
+    if(animEntity->frameChanged()){
+        animEntity->changedOff();
+    }
+
 }
+
+/*
+ * sendDataToBufferTex
+ * Send a animated sub-animEntityity to the graphics card.
+ * @param AnimSubEntity animEntity - the animEntity to be rendered.
+ */
+void Engine::sendDataToBufferTex(AnimSubEntity &animEntity){
+
+    //Vertex Buffer
+    //vertexDataVBO.bind();
+   // vertexDataVBO.setUsagePattern(QGLBuffer::StaticDraw);
+    //vertexDataVBO.allocate(animEntity.getVertices().data(), sizeof(float) * animEntity.getVertices().size());
+    m_program->setAttributeArray(PROGRAM_VERTEX_ATTRIBUTE, animEntity.getVertices().data(), 3, 0);
+
+    //Texture coordinates
+    //textureDataVBO.bind();
+    //textureDataVBO.setUsagePattern(QGLBuffer::StaticDraw);
+    //textureDataVBO.allocate(animEntity.getModel()->getTexture().data(), sizeof(float) * animEntity.getModel()->getTexture().size());
+    m_program->setAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE, animEntity.getModel()->getTexture().data(), 2, 0);
+
+    // Indexes
+    indexBuffer.bind();
+    indexBuffer.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    indexBuffer.allocate(animEntity.getModel()->getIndices().data(), sizeof(GLuint) * animEntity.getModel()->getIndices().size());
+
+}
+
+/*
+ * resendVertsToBuffer
+ * Send a animated subanimEntityity to the graphics card.
+ * @param AnimSubEntity animEntity - the animEntityity to be rendered.
+ */
+void Engine::resendVertsToBuffer(AnimSubEntity &animEntity){
+
+    m_program->setAttributeArray(PROGRAM_VERTEX_ATTRIBUTE, animEntity.getVertices().data(), 3, 0);
+
+}
+
 
 void Engine::paintGL()
 {
@@ -275,19 +367,16 @@ void Engine::paintGL()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    m_world.setToIdentity();
-    m_world.rotate(180.0f - (m_xRot / 16.0f), 1, 0, 0);
-    m_world.rotate(m_yRot / 16.0f, 0, 1, 0);
-    m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
-
-    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
     m_program->bind();
-    m_program->setUniformValue(m_projMatrixLoc, m_proj);
-    m_program->setUniformValue(m_mvMatrixLoc, m_camera * m_world);
-    QMatrix3x3 normalMatrix = m_world.normalMatrix();
-    m_program->setUniformValue(m_normalMatrixLoc, normalMatrix);
 
-    glDrawArrays(GL_TRIANGLES, 0, m_logo.vertexCount());
+    //send the two models to render.
+    if(fromEntity){
+        bufferedDrawTex(fromEntity);
+    }
+
+    if(toEntity){
+        bufferedDrawTex(toEntity);
+    }
 
     m_program->release();
 
@@ -296,18 +385,48 @@ void Engine::paintGL()
 
 void Engine::resizeGL(int w, int h)
 {
-    m_proj.setToIdentity();
-    m_proj.perspective(45.0f, GLfloat(w) / h, 0.01f, 100.0f);
+    projMatrix.setToIdentity();
+    projMatrix.perspective(45.0f, GLfloat(w) / h, 0.1f, 100.0f);
+     //projMatrix = glm::perspective(45.0f, (float)w/h, 0.1f, 1000.0f);
 }
 
 
-void Engine::moveCameraForward(){}
-void Engine::moveCameraBackward(){}
-void Engine::moveCameraLeft(){}
-void Engine::moveCameraRight(){}
-void Engine::moveCameraUpward(){}
-void Engine::moveCameraDownward(){}
-void Engine::pointCameraUpward(){}
-void Engine::pointCameraDownward(){}
-void Engine::pointCameraLeft(){}
-void Engine::pointCameraRight(){}
+void Engine::moveCameraForward(){
+    camera->moveForward();
+}
+
+void Engine::moveCameraBackward(){
+    camera->moveBackward();
+}
+
+void Engine::moveCameraLeft(){
+    camera->strafeLeft();
+}
+
+void Engine::moveCameraRight(){
+    camera->strafeRight();
+}
+
+void Engine::moveCameraUpward(){
+    camera->moveUp();
+}
+
+void Engine::moveCameraDownward(){
+    camera->moveDown();
+}
+
+void Engine::pointCameraUpward(){
+    camera->lookUp();
+}
+
+void Engine::pointCameraDownward(){
+    camera->lookDown();
+}
+
+void Engine::pointCameraLeft(){
+    camera->lookLeft();
+}
+
+void Engine::pointCameraRight(){
+    camera->lookRight();
+}

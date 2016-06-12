@@ -104,9 +104,9 @@ Animation* AnimLoader::loadAnim(QString filePath){
 
         infile >> token;
 
-        if(token == "//")
+        if(token == "//"){
             getline(infile, buffer);
-
+        }
         else if(token == "numFrames"){
             infile >> numFrames;
             frames.reserve(numFrames);
@@ -206,5 +206,8 @@ Animation* AnimLoader::loadAnim(QString filePath){
 
     }
 
-    return buildFrameSkeletons();
+    Animation *anim = buildFrameSkeletons();
+    anim->setFrameRate(frameRate);
+
+    return anim;
 }

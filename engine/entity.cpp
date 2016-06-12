@@ -8,8 +8,10 @@
 
 #include "entity.h"
 
-Entity::Entity(){}
-Entity::~Entity(){}
+Entity::Entity(): visible(true){}
+
+Entity::~Entity(){
+}
 
 /*
  * rotate
@@ -17,8 +19,9 @@ Entity::~Entity(){}
  * @param float degrees - degrees
  * @param axis - axis
  */
-void Entity::rotate(float degrees, vec3 axis){
-    orient = glm::rotate(orient, degrees, axis);
+void Entity::rotate(qreal degrees, QVector3D axis){
+    orient.rotate(degrees, axis);
+    //orient = glm::rotate(orient, degrees, axis);
 }
 
 /*
@@ -26,26 +29,27 @@ void Entity::rotate(float degrees, vec3 axis){
  * moves an entity by a described translation
  * @param vec3 - a vector displacement.
  */
-void Entity::translate(vec3 trans){
-    pos = glm::translate(pos, trans);
+void Entity::translate(QVector3D trans){
+    pos.translate(trans);
+    //pos = glm::translate(pos, trans);
 }
 
 AnimSubEntity::AnimSubEntity(){}
-AnimSubEntity::AnimSubEntity(AnimModel * newModel) : visible(true), m_model(newModel){}
+AnimSubEntity::AnimSubEntity(AnimModel * newModel) : m_model(newModel){}
 AnimSubEntity::~AnimSubEntity(){}
 
 /*
  * AnimSubEntity Copy Constructor
  * @param AnimSubEntity & a
  */
-AnimSubEntity::AnimSubEntity(const AnimSubEntity & a): m_model(a.m_model), VB(a.VB), visible(a.visible), Entity(a), vertices(a.vertices){}
+AnimSubEntity::AnimSubEntity(const AnimSubEntity & a): m_model(a.m_model), VB(a.VB), Entity(a), vertices(a.vertices){}
 
 /*
  * AnimEntity Constructor
  * @param vector SubEntities - sub-entities
  * @param Skeleton bindpose - the bindpose skeleton for this animated entity
  */
-AnimEntity::AnimEntity(vector<AnimSubEntity> nSubEntities, Skeleton nbindPose) : fChanged(false), frameCount(0), anim(NULL), SubEntities(nSubEntities), bindPose(nbindPose), lastTime(0.0f), deltaTime(0.0f), state(BIND)
+AnimEntity::AnimEntity(vector<AnimSubEntity> nSubEntities, Skeleton nbindPose) : fChanged(false), frameCount(0), anim(NULL), SubEntities(nSubEntities), bindPose(nbindPose), state(BIND), updateMillis(0)
 {
     rebufVerts();
 }
@@ -55,7 +59,7 @@ AnimEntity::AnimEntity(vector<AnimSubEntity> nSubEntities, Skeleton nbindPose) :
  * AnimEntity Copy Constructor
  * @param AnimEntity & a
  */
-AnimEntity::AnimEntity(const AnimEntity & a): anim(a.anim), bindPose(a.bindPose), fChanged(a.fChanged), frameCount(a.frameCount), SubEntities(a.SubEntities), lastTime(a.lastTime), deltaTime(a.deltaTime), state(BIND)
+AnimEntity::AnimEntity(const AnimEntity & a): anim(a.anim), bindPose(a.bindPose), fChanged(a.fChanged), frameCount(a.frameCount), SubEntities(a.SubEntities), state(BIND), updateMillis(0)
 {
 }
 
@@ -104,12 +108,18 @@ void AnimEntity::Pause(){
  * buffers the next frame of the animation
  * @param double currentTime - used to ensure the animation is drawn at the desired frameRate.
  */
-void AnimEntity::update(double currentTime){
+void AnimEntity::update(){
 
-    if(state == PLAY){
+    updateMillis += 16;
+
+    if(anim && updateMillis >= anim->getMillisPerFrame()){
+        updateMillis = 0;
+
+        if(state == PLAY){
             frameCount++;
             frameCount %= anim->getNumFrames();
             rebufVerts();
+        }
     }
 
 }
@@ -121,7 +131,6 @@ void AnimEntity::update(double currentTime){
  */
 bool AnimEntity::setAnim(Animation * nAnim){
     this->anim = nAnim;
-    deltaTime = 60.0f / anim->getFrameRate();
     Pause();
     return true;
 }

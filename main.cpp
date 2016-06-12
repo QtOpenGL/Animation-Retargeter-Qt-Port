@@ -76,17 +76,16 @@ int main(int argc, char *argv[])
 
     while(mainWindow.isSessionRunning()){
 
+        time.restart();
+
+        //do Stuff
         app.processEvents();
-
-        int delay = 14 - time.elapsed();
-        std::cout << time.elapsed() << std::endl;
-
-        if(delay > 0){
-            QThread::msleep(delay);
-        }
-
         mainWindow.updateEngine();
         mainWindow.paintGL();
+
+        //delay if we still have time to spare
+        int delay = 16 - time.elapsed();
+        QThread::msleep(delay > 0? delay : 0);
 
     }
 

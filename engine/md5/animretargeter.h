@@ -20,7 +20,7 @@ class AnimRetargeter {
     bool inVector(int target, vector<int> vector);
 
 public:
-    Animation * retargetAnim( Animation * anim, AnimEntity * ent, map<int, int> * userMap, vector<int> roots, Skeleton bind);
+    Animation * retargetAnim( Animation * anim, AnimEntity * ent, map<int, int> userMap, vector<int> roots, Skeleton bind);
 };
 
 #endif // ANIMRETARGETER_H

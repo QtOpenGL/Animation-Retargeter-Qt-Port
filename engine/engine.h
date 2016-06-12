@@ -18,6 +18,9 @@
 #include "engine/entity.h"
 #include "engine/model.h"
 
+#define PROGRAM_VERTEX_ATTRIBUTE 0
+#define PROGRAM_TEXCOORD_ATTRIBUTE 1
+
 class Engine : public QObject
 {
     Q_OBJECT
@@ -37,14 +40,18 @@ public:
 
     ProcedureResult LoadModel(QString meshString, QString texString, EntityType type);
     ProcedureResult LoadAnimation(QString animString);
+    ProcedureResult retargetAnimation(map<int, int> boneMap, vector<int> roots);
     QVector<Skeleton> getSkeletonsForWindow();
+
+    void bufferedDrawTex(AnimEntity *animEntity);
+    void resendVertsToBuffer(AnimSubEntity &animEntity);
+    void sendDataToBufferTex(AnimSubEntity &animEntity);
 
     void cleanup();
     void initializeGL();
     void paintGL();
     void resizeGL(int w, int h);
     void update();
-    GLuint storeTexture(QString);
 
 public slots:
     void onPlayFrom();
@@ -54,29 +61,13 @@ public slots:
     void onHideFrom();
     void onHideTo();
 
-private slots:
-    void setupVertexAttribs();
-
 signals:
 
 private:
-    QPoint m_lastPos;
-    Logo m_logo;
-    QOpenGLVertexArrayObject m_vao;
-    QOpenGLBuffer m_logoVbo;
+
     QOpenGLShaderProgram *m_program;
-    int m_projMatrixLoc;
-    int m_mvMatrixLoc;
-    int m_normalMatrixLoc;
-    int m_lightPosLoc;
-    QMatrix4x4 m_proj;
-    QMatrix4x4 m_camera;
-    QMatrix4x4 m_world;
-    bool m_core;
-    bool m_transparent;
-    int m_xRot;
-    int m_yRot;
-    int m_zRot;
+    QOpenGLBuffer indexBuffer;
+    QMatrix4x4 projMatrix;
 
     Camera * camera;
     ModelLoader * modelLoader;
@@ -85,7 +76,26 @@ private:
     AnimEntity * toEntity;
     AnimEntity * fromEntity;
     Animation * animation;
-    std::map<int, int> * userMap;
+    QVector<QOpenGLTexture *> textures;
+
+    const char *VertexShaderSource =
+        "attribute highp vec4 vertex;\n"
+        "attribute mediump vec4 texCoord;\n"
+        "varying mediump vec4 texc;\n"
+        "uniform mediump mat4 matrix;\n"
+        "void main(void)\n"
+        "{\n"
+        "    gl_Position = matrix * vertex;\n"
+        "    texc = texCoord;\n"
+        "}\n";
+
+    const char *FragmentShaderSource =
+        "uniform sampler2D texture;\n"
+        "varying mediump vec4 texc;\n"
+        "void main(void)\n"
+        "{\n"
+        "    gl_FragColor = texture2D(texture, texc.st);\n"
+        "}\n";
 
 };
 

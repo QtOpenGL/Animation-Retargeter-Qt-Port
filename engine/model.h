@@ -22,7 +22,7 @@ private:
    void compAux(int parent, int height);
 
 public:
-    Skeleton() {};
+    Skeleton() {}
     Skeleton(vector<joint> nJoints): joints(nJoints){}
     Skeleton(const Skeleton & skel): joints(skel.joints){}
     ~Skeleton(){}
@@ -81,18 +81,20 @@ class Animation {
 private:
     string name;
     int frameRate;
+    int millisPerFrame;
     vector<Skeleton> Skeletons;
 
 public:
     Animation( string nName, int nFrameRate): name(nName), frameRate(nFrameRate) {}
-    Animation(): name("Default"), frameRate(30){};
+    Animation(): name("Default"), frameRate(30){}
     Animation(const Animation & a);
     ~Animation(){}
-    vector<Skeleton> & getSkeletons() { return Skeletons; };
-    int getNumFrames(){ return (int)Skeletons.size() -1; };
-    int getFrameRate(){return frameRate; };
-    void setFrameRate(int rate){ this->frameRate = rate; };
-    void setSkeletons(vector<Skeleton> skels){ Skeletons = skels; };
+    vector<Skeleton> & getSkeletons() { return Skeletons; }
+    int getNumFrames(){ return (int)Skeletons.size() -1; }
+    int getFrameRate(){return frameRate; }
+    int getMillisPerFrame(){ return millisPerFrame; }
+    void setFrameRate(int rate){ this->frameRate = rate; this->millisPerFrame = 1000 / rate > 0? rate : 30; }
+    void setSkeletons(vector<Skeleton> skels){ Skeletons = skels; }
 };
 
 

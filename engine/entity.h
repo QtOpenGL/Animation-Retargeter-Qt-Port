@@ -5,6 +5,9 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <QOpenGLTexture>
+#include <QMatrix4x4>
+#include <QVector3D>
 #include "glm.hpp"
 #include "matrix_transform.hpp"
 #include "transform.hpp"
@@ -26,26 +29,26 @@ using std::map;
 class Entity{
 
 private:
-    vec3 color;
-    mat4 pos;
-    mat4 orient;
-    GLuint texBID;
+    QMatrix4x4 pos;
+    QMatrix4x4 orient;
+    QOpenGLTexture * texture;
+    bool visible;
 
 
 public:
     Entity();
     virtual ~Entity();
-    void setPos(mat4 newPos){ this->pos = newPos; }
-    void setOrient(mat4 newOrient){ this->orient = newOrient; }
-    void setColor(vec3 newColor) { this->color = newColor; }
-    void setTexBID(GLuint newID){ this->texBID = newID; }
-    void rotate(float degrees, vec3 axis);
-    void translate(vec3 trans);
+    void setPos(QMatrix4x4 newPos){ this->pos = newPos; }
+    void setOrient(QMatrix4x4 newOrient){ this->orient = newOrient; }
+    void setTexture(QOpenGLTexture * texture){ this->texture = texture; }
+    void rotate(qreal degrees, QVector3D axis);
+    void translate(QVector3D trans);
+    void setVisible(bool setting){ visible = setting; }
+    bool isVisible(){ return visible; }
 
-    mat4 getPos(){ return pos; }
-    mat4 getOrient(){ return orient; }
-    GLuint getTexBID(){ return texBID; }
-    vec3 getColor() { return color; }
+    QMatrix4x4 getPos(){ return pos; }
+    QMatrix4x4 getOrient(){ return orient; }
+    QOpenGLTexture* getTexture(){ return texture; }
 
 };
 
@@ -59,7 +62,6 @@ private:
     AnimModel * m_model;
     vector<float> vertices;
     GLuint VB;
-    bool visible;
 
 public:
     AnimSubEntity();
@@ -72,8 +74,6 @@ public:
     void rebufVerts(Skeleton & skel) { this->vertices = m_model->computeVerts(skel); }
     vector<float> getVertices() { return vertices; }
     void setBufferIDs(GLuint nVB){ VB = nVB; }
-    void setVisible(bool setting){ visible = setting; }
-    bool isVisible(){ return visible; }
     GLuint getVB(){ return VB; }
 };
 
@@ -97,8 +97,7 @@ private:
     Skeleton bindPose;
     bool fChanged;
     int frameCount;
-    double lastTime;
-    float deltaTime;
+    int updateMillis;
     State state;
 
 public:
@@ -112,13 +111,13 @@ public:
     bool frameChanged(){ return fChanged; }
     void changedOff(){ fChanged = false; }
     void rebufVerts();
-    void update(double time);
+    void update();
 
     void BindPose();
     void Pause();
     void Play();
 
-    bool isPlaying(){return state == PLAY; }
+    bool isPlaying(){ return state == PLAY; }
     bool isPaused(){ return state == PAUSE; }
     bool isBindPose(){ return state == BIND; }
 
