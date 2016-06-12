@@ -13,7 +13,8 @@ HEADERS       = ui/glwidget.h \
     utils/md5exception.h \
     engine/md5/animloader.h \
     engine/md5/animretargeter.h \
-    engine/md5/modelloader.h
+    engine/md5/modelloader.h \
+    engine/glslprogram.h
 SOURCES       = ui/glwidget.cpp \
                 main.cpp \
                 ui/window.cpp \
@@ -29,7 +30,8 @@ SOURCES       = ui/glwidget.cpp \
     utils/quaternion.cpp \
     engine/md5/animloader.cpp \
     engine/md5/animretargeter.cpp \
-    engine/md5/modelloader.cpp
+    engine/md5/modelloader.cpp \
+    engine/glslprogram.cpp
 
 QT           += widgets
 

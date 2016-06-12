@@ -21,15 +21,12 @@ Camera::Camera() : viewDirection(0.0f, 0.0f, -1.0f), up(0.0f, 1.0f, 0.0f){
 
 }
 
-Camera::Camera(QVector3D newPos) : viewDirection(0.0f, 0.0f, -1.0f), up(0.0f, 1.0f, 0.0f){
+Camera::Camera(vec3 newPos) : viewDirection(0.0f, 0.0f, -1.0f), up(0.0f, 1.0f, 0.0f){
     this->position = newPos;
 }
 
-QMatrix4x4 Camera::getWorldToViewMatrix() {
-   //return glm::lookAt(position, position + viewDirection, up);
-    QMatrix4x4 worldToView;
-    worldToView.lookAt(position, position + viewDirection, up);
-    return worldToView;
+mat4 Camera::getWorldToViewMatrix() {
+   return glm::lookAt(position, position + viewDirection, up);
 }
 
 /*
@@ -69,11 +66,7 @@ void Camera::moveDown(){
  * Rotates the Camera to the left
  */
 void Camera::lookLeft(){
-    //viewDirection = glm::mat3(glm::rotate(0.1f, up)) * viewDirection;
-    QMatrix4x4 rotation;
-    rotation.rotate(qreal(0.1f), up);
-
-    viewDirection = rotation * viewDirection;
+    viewDirection = glm::mat3(glm::rotate(0.1f, up)) * viewDirection;
 }
 
 /*
@@ -81,11 +74,8 @@ void Camera::lookLeft(){
  * Rotates the Camera to the left
  */
 void Camera::lookRight(){
-    //viewDirection = glm::mat3(glm::rotate(-0.1f, up)) * viewDirection;
-    QMatrix4x4 rotation;
-    rotation.rotate(qreal(-0.1f), up);
+    viewDirection = glm::mat3(glm::rotate(-0.1f, up)) * viewDirection;
 
-    viewDirection = rotation * viewDirection;
 }
 
 /*
@@ -93,10 +83,7 @@ void Camera::lookRight(){
  * Rotates the Camera to the left
  */
 void Camera::strafeLeft(){
-    //glm::vec3 strafeDirection = glm::cross(viewDirection, up);
-    //position += -5.0f * strafeDirection;
-
-    QVector3D strafeDirection = QVector3D::crossProduct(viewDirection, up);
+    glm::vec3 strafeDirection = glm::cross(viewDirection, up);
     position += -5.0f * strafeDirection;
 }
 
@@ -105,10 +92,7 @@ void Camera::strafeLeft(){
  * Moves the Camera to the right
  */
 void Camera::strafeRight(){
-    //glm::vec3 strafeDirection = glm::cross(viewDirection, up);
-    //position += 5.0f * strafeDirection;
-
-    QVector3D strafeDirection = QVector3D::crossProduct(viewDirection, up);
+    glm::vec3 strafeDirection = glm::cross(viewDirection, up);
     position += 5.0f * strafeDirection;
 }
 
@@ -117,14 +101,9 @@ void Camera::strafeRight(){
  * Rotates the Camera upward
  */
 void Camera::lookUp(){
-    //glm::vec3 toRotateAround = glm::cross(viewDirection, up);
-    //viewDirection = glm::mat3(glm::rotate(0.1f, toRotateAround)) * viewDirection;
+    glm::vec3 toRotateAround = glm::cross(viewDirection, up);
+    viewDirection = glm::mat3(glm::rotate(0.1f, toRotateAround)) * viewDirection;
 
-    QVector3D toRotateAround = QVector3D::crossProduct(viewDirection, up);
-    QMatrix4x4 rotation;
-    rotation.rotate(qreal(0.1f), toRotateAround);
-
-    viewDirection = rotation * viewDirection;
 }
 
 /*
@@ -132,12 +111,7 @@ void Camera::lookUp(){
  * Rotates the Camera downward
  */
 void Camera::lookDown(){
-    //glm::vec3 toRotateAround = glm::cross(viewDirection, up);
-    //viewDirection = glm::mat3(glm::rotate(-0.1f, toRotateAround)) * viewDirection;
+    glm::vec3 toRotateAround = glm::cross(viewDirection, up);
+    viewDirection = glm::mat3(glm::rotate(-0.1f, toRotateAround)) * viewDirection;
 
-    QVector3D toRotateAround = QVector3D::crossProduct(viewDirection, up);
-    QMatrix4x4 rotation;
-    rotation.rotate(qreal(-0.1f), toRotateAround);
-
-    viewDirection = rotation * viewDirection;
 }

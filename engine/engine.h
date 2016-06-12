@@ -17,6 +17,7 @@
 #include "engine/md5/animretargeter.h"
 #include "engine/entity.h"
 #include "engine/model.h"
+#include "engine/glslprogram.h"
 
 #define PROGRAM_VERTEX_ATTRIBUTE 0
 #define PROGRAM_TEXCOORD_ATTRIBUTE 1
@@ -65,9 +66,10 @@ signals:
 
 private:
 
-    QOpenGLShaderProgram *m_program;
+    GLSLProgram *shaderProgram;
     QOpenGLBuffer indexBuffer;
-    QMatrix4x4 projMatrix;
+    mat4 projMatrix;
+    mat4 finalMatrix;
 
     Camera * camera;
     ModelLoader * modelLoader;
@@ -78,23 +80,26 @@ private:
     Animation * animation;
     QVector<QOpenGLTexture *> textures;
 
-    const char *VertexShaderSource =
-        "attribute highp vec4 vertex;\n"
-        "attribute mediump vec4 texCoord;\n"
-        "varying mediump vec4 texc;\n"
-        "uniform mediump mat4 matrix;\n"
+    string vertexShaderSource =
+        "#version 120\n"
+        "uniform mat4 projection_matrix;\n"
+        "attribute vec3 a_Vertex;\n"
+        "attribute vec2 s_vTexCoord;\n"
+        "varying vec2 texCoord;\n"
         "void main(void)\n"
         "{\n"
-        "    gl_Position = matrix * vertex;\n"
-        "    texc = texCoord;\n"
+        "    vec4 pos = vec4(a_Vertex, 1.0);\n"
+        "    gl_Position = projection_matrix * pos;\n"
+        "    texCoord = s_vTexCoord;\n"
         "}\n";
 
-    const char *FragmentShaderSource =
+    string fragmentShaderSource =
+        "#version 120\n"
         "uniform sampler2D texture;\n"
-        "varying mediump vec4 texc;\n"
+        "varying vec2 texCoord;\n"
         "void main(void)\n"
         "{\n"
-        "    gl_FragColor = texture2D(texture, texc.st);\n"
+        "    gl_FragColor = texture2D(texture, texCoord);\n"
         "}\n";
 
 };

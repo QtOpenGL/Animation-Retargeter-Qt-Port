@@ -1,26 +1,25 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-//#include "glm.hpp"
-//#include "transform.hpp"
-#include <QVector3D>
-#include <QMatrix4x4>
-#include <QMatrix3x3>
+#include "glm.hpp"
+#include "transform.hpp"
+
+using glm::mat4;
+using glm::vec3;
 
 class Camera {
 
 private:
-    QVector3D position;
-    QVector3D viewDirection;
-    QVector3D up;
-    QVector3D oldMousePosition;
+    vec3 position;
+    vec3 viewDirection;
+    vec3 up;
 
 
 public:
     Camera();
-    Camera(QVector3D newPos);
+    Camera(glm::vec3 newPos);
 
-    QMatrix4x4 getWorldToViewMatrix();
+    mat4 getWorldToViewMatrix();
 
     void moveForward();
     void moveBackward();

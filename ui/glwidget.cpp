@@ -82,6 +82,7 @@ void GLWidget::initializeGL()
 void GLWidget::paint(){
     makeCurrent();
     engine->paintGL();
+    update();
     doneCurrent();
 }
 

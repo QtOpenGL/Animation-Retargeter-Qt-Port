@@ -19,9 +19,8 @@ Entity::~Entity(){
  * @param float degrees - degrees
  * @param axis - axis
  */
-void Entity::rotate(qreal degrees, QVector3D axis){
-    orient.rotate(degrees, axis);
-    //orient = glm::rotate(orient, degrees, axis);
+void Entity::rotate(float degrees, vec3 axis){
+    orient = glm::rotate(orient, degrees, axis);
 }
 
 /*
@@ -29,9 +28,8 @@ void Entity::rotate(qreal degrees, QVector3D axis){
  * moves an entity by a described translation
  * @param vec3 - a vector displacement.
  */
-void Entity::translate(QVector3D trans){
-    pos.translate(trans);
-    //pos = glm::translate(pos, trans);
+void Entity::translate(vec3 trans){
+    pos = glm::translate(pos, trans);
 }
 
 AnimSubEntity::AnimSubEntity(){}

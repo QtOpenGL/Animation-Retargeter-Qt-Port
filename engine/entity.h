@@ -6,8 +6,6 @@
 #include <memory>
 #include <map>
 #include <QOpenGLTexture>
-#include <QMatrix4x4>
-#include <QVector3D>
 #include "glm.hpp"
 #include "matrix_transform.hpp"
 #include "transform.hpp"
@@ -29,8 +27,8 @@ using std::map;
 class Entity{
 
 private:
-    QMatrix4x4 pos;
-    QMatrix4x4 orient;
+    mat4 pos;
+    mat4 orient;
     QOpenGLTexture * texture;
     bool visible;
 
@@ -38,16 +36,16 @@ private:
 public:
     Entity();
     virtual ~Entity();
-    void setPos(QMatrix4x4 newPos){ this->pos = newPos; }
-    void setOrient(QMatrix4x4 newOrient){ this->orient = newOrient; }
+    void setPos(mat4 newPos){ this->pos = newPos; }
+    void setOrient(mat4 newOrient){ this->orient = newOrient; }
     void setTexture(QOpenGLTexture * texture){ this->texture = texture; }
-    void rotate(qreal degrees, QVector3D axis);
-    void translate(QVector3D trans);
+    void rotate(float degrees, vec3 axis);
+    void translate(vec3 trans);
     void setVisible(bool setting){ visible = setting; }
     bool isVisible(){ return visible; }
 
-    QMatrix4x4 getPos(){ return pos; }
-    QMatrix4x4 getOrient(){ return orient; }
+    mat4 getPos(){ return pos; }
+    mat4 getOrient(){ return orient; }
     QOpenGLTexture* getTexture(){ return texture; }
 
 };
