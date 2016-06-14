@@ -140,9 +140,10 @@ ProcedureResult Engine::LoadModel(QString meshString, QString texString, EntityT
             fromEntity = prevEntity;
             return ProcedureResult(false, "File is corrupted.");
         }else{
-            QOpenGLTexture* texture = new QOpenGLTexture(QImage(texString));
-            fromEntity->getSubEntities()[0].setTexture(texture);
-            textures.push_back(texture);
+            //QOpenGLTexture* texture = new QOpenGLTexture(QImage(texString));
+            //fromEntity->getSubEntities()[0].setTexture(texture);
+            //textures.push_back(texture);
+            //toEntity->getSubEntities()[0].setTexBID(storeTexture(QImage(texString)));
             fromEntity->getSubEntities()[1].setVisible(false);
             fromEntity->getSubEntities()[2].setVisible(false);
             fromEntity->getSubEntities()[3].setVisible(false);
@@ -166,9 +167,10 @@ ProcedureResult Engine::LoadModel(QString meshString, QString texString, EntityT
             toEntity = prevEntity;
             return ProcedureResult(false, "File corrupted");
         }else{
-            QOpenGLTexture* texture = new QOpenGLTexture(QImage(texString));
-            toEntity->getSubEntities()[0].setTexture(texture);
-            textures.push_back(texture);
+            //QOpenGLTexture* texture = new QOpenGLTexture(QImage(texString));
+            //toEntity->getSubEntities()[0].setTexture(texture);
+            //textures.push_back(texture);
+            toEntity->getSubEntities()[0].setTexBID(storeTexture(QImage(texString)));
             toEntity->getSubEntities()[1].setVisible(false);
             toEntity->getSubEntities()[2].setVisible(false);
             toEntity->getSubEntities()[3].setVisible(false);
@@ -201,6 +203,8 @@ void Engine::cleanup()
     for(QOpenGLTexture* texture: textures){
         delete texture;
     }
+
+    deleteTextures();
 
     delete shaderProgram;
     shaderProgram = 0;
@@ -260,8 +264,8 @@ void Engine::bufferedDrawTex(AnimEntity *animEntity){
         finalMatrix = projMatrix * camera->getWorldToViewMatrix() * animEntity->getPos() * animEntity->getOrient();
 
         glActiveTexture(GL_TEXTURE0);
-        //glBindTexture(GL_TEXTURE_2D, subEntity.getTexBID());
-        subEntity.getTexture()->bind();
+        glBindTexture(GL_TEXTURE_2D, subEntity.getTexBID());
+        //subEntity.getTexture()->bind();
 
         shaderProgram->sendUniform4x4("projection_matrix", &finalMatrix[0][0], GL_FALSE);
         shaderProgram->sendUniform("texture", 0.0f);
@@ -296,6 +300,36 @@ void Engine::bufferedDrawTex(AnimEntity *animEntity){
         animEntity->changedOff();
     }
 
+}
+
+GLuint Engine::storeTexture(QImage imageData){
+
+    GLuint textureBuffer;
+    glGenTextures(1, &textureBuffer);
+    glActiveTexture(GL_TEXTURE0); //GL_TEXTURE0 or TEXTURE1 e.c.t defined by how the class handles this
+    glBindTexture(GL_TEXTURE_2D, textureBuffer);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, imageData.width(),
+                 imageData.height(), 0, GL_RGB, GL_UNSIGNED_BYTE,
+                 imageData.bits());
+
+   gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB8, imageData.width(),
+                      imageData.height(), GL_RGB, GL_UNSIGNED_BYTE,
+                      imageData.bits());
+
+
+    TexIDs.push_back(textureBuffer);
+
+    return textureBuffer;
+}
+
+/*
+ * deleteTextures
+ * free the texture memory stored on the graphics card
+ */
+void Engine::deleteTextures(){
+    glDeleteTextures((GLsizei)TexIDs.size(), TexIDs.data());
 }
 
 /*
@@ -363,51 +397,41 @@ void Engine::resizeGL(int w, int h)
 
 
 void Engine::moveCameraForward(){
-    std::cout << "camera" << endl;
     camera->moveForward();
 }
 
 void Engine::moveCameraBackward(){
-    std::cout << "camera" << endl;
     camera->moveBackward();
 }
 
 void Engine::moveCameraLeft(){
-    std::cout << "camera" << endl;
     camera->strafeLeft();
 }
 
 void Engine::moveCameraRight(){
-    std::cout << "camera" << endl;
     camera->strafeRight();
 }
 
 void Engine::moveCameraUpward(){
-    std::cout << "camera" << endl;
     camera->moveUp();
 }
 
 void Engine::moveCameraDownward(){
-    std::cout << "camera" << endl;
     camera->moveDown();
 }
 
 void Engine::pointCameraUpward(){
-    std::cout << "camera" << endl;
     camera->lookUp();
 }
 
 void Engine::pointCameraDownward(){
-    std::cout << "camera" << endl;
     camera->lookDown();
 }
 
 void Engine::pointCameraLeft(){
-    std::cout << "camera" << endl;
     camera->lookLeft();
 }
 
 void Engine::pointCameraRight(){
-    std::cout << "camera" << endl;
     camera->lookRight();
 }

@@ -48,11 +48,13 @@
 #include <QMessageBox>
 #include <QKeyEvent>
 #include <iostream>
+#include <QApplication>
 
-MainWindow::MainWindow(QApplication * qApp):
+MainWindow::MainWindow(QApplication *):
     runSession(true)
 {
     this->aName = qApp;
+    aName->installEventFilter(this);
     engine = new Engine();
     window = new Window(engine);
     glwidget = window->getGLWidget();
@@ -143,54 +145,59 @@ void MainWindow::onOpenFromMesh(){
     window->resetRetargetWidgets();
 }
 
-
-void MainWindow::keyPressEvent(QKeyEvent *e)
+bool MainWindow::eventFilter(QObject *object, QEvent *e)
 {
-    switch(e->key()){
+ if (e->type() == QEvent::KeyPress)
+  {
+      QKeyEvent *keyEvent = static_cast<QKeyEvent *>(e);
 
-    case Qt::Key_W:
-        engine->moveCameraForward();
-        break;
+      switch(keyEvent->key()){
 
-    case Qt::Key_S:
-        engine->moveCameraBackward();
-        break;
+          case Qt::Key_W:
+              engine->moveCameraForward();
+              break;
 
-    case Qt::Key_A:
-        engine->moveCameraLeft();
-        break;
+          case Qt::Key_S:
+              engine->moveCameraBackward();
+              break;
 
-    case Qt::Key_D:
-        engine->moveCameraRight();
-        break;
+          case Qt::Key_A:
+              engine->moveCameraLeft();
+              break;
 
-    case Qt::Key_R:
-        engine->moveCameraUpward();
-        break;
+          case Qt::Key_D:
+              engine->moveCameraRight();
+              break;
 
-    case Qt::Key_F:
-        engine->moveCameraDownward();
-        break;
+          case Qt::Key_R:
+              engine->moveCameraUpward();
+              break;
 
-    case Qt::Key_Up:
-        engine->pointCameraUpward();
-        break;
+          case Qt::Key_F:
+              engine->moveCameraDownward();
+              break;
 
-    case Qt::Key_Down:
-        engine->pointCameraDownward();
-        break;
+          case KEY_UP:
+              engine->pointCameraUpward();
+              break;
 
-    case Qt::Key_Left:
-        engine->pointCameraLeft();
-        break;
+          case KEY_DOWN:
+              engine->pointCameraDownward();
+              break;
 
-    case Qt::Key_Right:
-        engine->pointCameraRight();
-        break;
+          case KEY_LEFT:
+              engine->pointCameraLeft();
+              break;
 
-    }
+          case KEY_RIGHT:
+              engine->pointCameraRight();
+              break;
+      }
 
+  }
+ return false;
 }
+
 
 MainWindow::~MainWindow(){
     glwidget->cleanup();

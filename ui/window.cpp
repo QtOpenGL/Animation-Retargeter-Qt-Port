@@ -126,8 +126,8 @@ void Window::resetRetargetWidgets(){
         QLabel * toBoneLabel = new QLabel(QString("To Bone"));
         QLabel * rootLabel = new QLabel(QString("Root"));
 
-        Skeleton toSkel = skeletonList[1];
-        Skeleton fromSkel = skeletonList[0];
+        Skeleton toSkel = skeletonList[0];
+        Skeleton fromSkel = skeletonList[1];
 
         QVector<QString> toBones;
         QStringList fromBonesList;
@@ -222,6 +222,8 @@ void Window::retargetAnimation(){
 
         if(comboBoxes[i]->currentIndex() > 0){
             boneMap.insert(std::pair<int, int>(i, comboBoxes[i]->currentIndex()-1));
+
+            std::cout << i << " : " << comboBoxes[i]->currentIndex()-1 << std::endl;
         }
     }
 

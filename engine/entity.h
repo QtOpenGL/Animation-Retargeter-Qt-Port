@@ -31,6 +31,7 @@ private:
     mat4 orient;
     QOpenGLTexture * texture;
     bool visible;
+    GLuint texBID;
 
 
 public:
@@ -43,10 +44,12 @@ public:
     void translate(vec3 trans);
     void setVisible(bool setting){ visible = setting; }
     bool isVisible(){ return visible; }
+    void setTexBID(GLuint newID){ this->texBID = newID; };
 
     mat4 getPos(){ return pos; }
     mat4 getOrient(){ return orient; }
     QOpenGLTexture* getTexture(){ return texture; }
+    GLuint getTexBID(){ return texBID; };
 
 };
 

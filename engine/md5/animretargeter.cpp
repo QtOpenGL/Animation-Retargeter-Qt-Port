@@ -2,7 +2,6 @@
 
 void AnimRetargeter::buildBindPose(Skeleton &bind){
 
-
     for(int i = 0; i < bind.size(); i++){
         //if you have a parent
         if(bind[i].getParent() > -1){

@@ -74,6 +74,8 @@ protected:
     void resizeGL(int width, int height) Q_DECL_OVERRIDE;
 
 private:
+
+private:
     Engine * engine;
 };
 

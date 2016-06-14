@@ -47,6 +47,11 @@ class GLWidget;
 class Window;
 class Engine;
 
+#define KEY_UP 16777235
+#define KEY_DOWN 16777237
+#define KEY_LEFT 16777234
+#define KEY_RIGHT 16777236
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -59,7 +64,7 @@ public:
     void updateEngine();
 
 protected:
-    void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+    bool eventFilter(QObject *object, QEvent *e);
 
 private slots:
     void onOpenToMesh();

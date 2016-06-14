@@ -3,6 +3,7 @@
 
 #include <map>
 #include <QOpenGLFunctions>
+#include <OpenGL/glu.h>
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLBuffer>
 #include <QMatrix4x4>
@@ -54,6 +55,11 @@ public:
     void resizeGL(int w, int h);
     void update();
 
+private:
+    GLuint storeTexture(QImage imageData);
+    void deleteTextures();
+
+
 public slots:
     void onPlayFrom();
     void onPlayTo();
@@ -79,6 +85,7 @@ private:
     AnimEntity * fromEntity;
     Animation * animation;
     QVector<QOpenGLTexture *> textures;
+    vector<GLuint> TexIDs;
 
     string vertexShaderSource =
         "#version 120\n"
